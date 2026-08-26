@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmora | Profile</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="container nav">
+        <a href="index.html" class="logo" aria-label="Filmora home"><span class="brand-mark">F</span><span class="brand-word">Filmora</span></a>
+        <nav class="top-actions" aria-label="Main navigation">
+            <a href="index.html" class="btn small">Collection</a>
+            <a href="logout.html" class="btn small">Logout</a>
+        </nav>
+    </div>
+</header>
+<main class="container form-page">
+    <a href="index.html" class="back">&larr; Back to collection</a>
+    <div class="profile-layout">
+        <section class="form-card">
+            <p class="eyebrow">YOUR PROFILE</p>
+            <div class="profile-avatar-wrap">
+                <div class="profile-avatar placeholder-avatar" id="avatarPreview" aria-label="Profile avatar">F</div>
+            </div>
+            <h1 id="profileName">Your Profile</h1>
+            <p class="subtitle" id="profileEmail"></p>
+            <label class="avatar-upload" for="avatarFile">Profile avatar</label>
+            <input id="avatarFile" type="file" accept="image/png,image/jpeg,image/webp">
+            <small class="form-help">Use a JPG, PNG, or WebP image up to 1 MB.</small>
+            <div class="profile-stats">
+                <div class="stat-card"><span class="label">Movies</span><strong id="movieCount">0</strong></div>
+                <div class="stat-card"><span class="label">Local videos</span><strong id="videoCount">0</strong></div>
+                <div class="stat-card"><span class="label">Average rating</span><strong id="averageRating">0.0</strong></div>
+            </div>
+        </section>
+
+        <section class="form-card">
+            <p class="eyebrow">SECURITY</p>
+            <h1>Change password</h1>
+            <p class="subtitle">Confirm your current password before choosing a new one.</p>
+            <form id="passwordForm">
+                <label for="currentPassword">Current password</label>
+                <div class="password-field"><input id="currentPassword" name="currentPassword" type="password" autocomplete="current-password" required><button type="button" class="password-toggle" data-password-toggle="currentPassword" aria-label="Show password">&#128065;</button></div>
+                <label for="newPassword">New password</label>
+                <div class="password-field"><input id="newPassword" name="newPassword" type="password" autocomplete="new-password" minlength="6" required><button type="button" class="password-toggle" data-password-toggle="newPassword" aria-label="Show password">&#128065;</button></div>
+                <label for="confirmNewPassword">Confirm new password</label>
+                <div class="password-field"><input id="confirmNewPassword" name="confirmNewPassword" type="password" autocomplete="new-password" minlength="6" required><button type="button" class="password-toggle" data-password-toggle="confirmNewPassword" aria-label="Show password">&#128065;</button></div>
+                <button type="submit" class="btn primary full">Update Password</button>
+            </form>
+            <div id="authMessage" hidden></div>
+        </section>
+    </div>
+</main>
+<footer><p>Filmora &copy; <span id="currentYear"></span> &middot; Static account demo</p></footer>
+<script src="auth.js"></script>
+<script>
+const profileUser = getCurrentUser();
+if (!profileUser) window.location.replace('login.html');
+
+function profileMovies() {
+    try {
+        return JSON.parse(localStorage.getItem(`filmora-movies-${profileUser.id}`)) || [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function refreshProfile() {
+    const user = getUserRecord();
+    const movies = profileMovies();
+    if (!user) return;
+    document.getElementById('profileName').textContent = user.name;
+    document.getElementById('profileEmail').textContent = user.email;
+    document.getElementById('movieCount').textContent = movies.length;
+    document.getElementById('videoCount').textContent = movies.filter((movie) => movie.hasVideo).length;
+    const average = movies.length ? movies.reduce((total, movie) => total + Number(movie.rating || 0), 0) / movies.length : 0;
+    document.getElementById('averageRating').textContent = average.toFixed(1);
+    const avatar = document.getElementById('avatarPreview');
+    if (user.avatar) {
+        avatar.innerHTML = `<img class="profile-avatar" src="${user.avatar}" alt="${user.name} avatar">`;
+    } else {
+        avatar.textContent = user.name.charAt(0).toUpperCase();
+    }
+}
+
+document.getElementById('avatarFile').addEventListener('change', (event) => {
+    const file = event.target.files[0];
+    if (!file) return;
+    if (file.size > 1024 * 1024) {
+        showAuthMessage('Please choose an image smaller than 1 MB.');
+        event.target.value = '';
+        return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+        const user = getUserRecord();
+        user.avatar = reader.result;
+        updateUserRecord(user);
+        refreshProfile();
+        showAuthMessage('Profile avatar updated.', 'success');
+    };
+    reader.readAsDataURL(file);
+});
+
+document.getElementById('passwordForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const user = getUserRecord();
+    if (form.get('newPassword') !== form.get('confirmNewPassword')) {
+        showAuthMessage('New passwords do not match.');
+        return;
+    }
+    if (form.get('newPassword').length < 6) {
+        showAuthMessage('Your new password must be at least 6 characters.');
+        return;
+    }
+    if (await hashPassword(form.get('currentPassword')) !== user.password) {
+        showAuthMessage('The current password is incorrect.');
+        return;
+    }
+    user.password = await hashPassword(form.get('newPassword'));
+    updateUserRecord(user);
+    event.target.reset();
+    showAuthMessage('Password updated successfully.', 'success');
+});
+
+document.getElementById('currentYear').textContent = new Date().getFullYear();
+refreshProfile();
+</script>
+</body>
+</html>

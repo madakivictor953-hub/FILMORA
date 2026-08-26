@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmora | Login</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="container nav">
+        <a href="index.html" class="logo" aria-label="Filmora home"><span class="brand-mark">F</span><span class="brand-word">Filmora</span></a>
+        <nav class="top-actions" aria-label="Account navigation"><a href="signup.html" class="btn primary">Sign Up</a></nav>
+    </div>
+</header>
+<main class="container form-page">
+    <a href="index.html" class="back">&larr; Back to collection</a>
+    <section class="form-card">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h1>Log in to Filmora</h1>
+        <p class="subtitle">Access your movie collection saved on this device.</p>
+        <form id="loginForm">
+            <label for="email">Email</label>
+            <input id="email" name="email" type="email" autocomplete="email" required>
+            <label for="password">Password</label>
+            <div class="password-field"><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" class="password-toggle" data-password-toggle="password" aria-label="Show password">&#128065;</button></div>
+            <button type="submit" class="btn primary full">Log In</button>
+        </form>
+        <div id="authMessage" hidden></div>
+        <p class="auth-switch">New to Filmora? <a href="signup.html">Create an account</a></p>
+    </section>
+</main>
+<footer><p>Filmora &copy; <span id="currentYear"></span> &middot; Static account demo</p></footer>
+<script src="auth.js"></script>
+<script>document.getElementById('currentYear').textContent = new Date().getFullYear();</script>
+</body>
+</html>

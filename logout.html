@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Filmora | Log Out</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header class="topbar">
+    <div class="container nav">
+        <a href="index.html" class="logo" aria-label="Filmora home"><span class="brand-mark">F</span><span class="brand-word">Filmora</span></a>
+    </div>
+</header>
+<main class="container form-page">
+    <section class="form-card">
+        <p class="eyebrow">ACCOUNT</p>
+        <h1>Log out of Filmora?</h1>
+        <p class="subtitle">Your saved movies will remain in this browser. You can log in again anytime on this device.</p>
+        <button type="button" class="btn primary full" id="logoutButton">Log Out</button>
+        <p class="auth-switch"><a href="index.html">Return to collection</a></p>
+    </section>
+</main>
+<footer><p>Filmora &copy; <span id="currentYear"></span> &middot; Static account demo</p></footer>
+<script src="auth.js"></script>
+<script>document.getElementById('currentYear').textContent = new Date().getFullYear();</script>
+</body>
+</html>

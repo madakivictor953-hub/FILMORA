@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Filmora - a simple movie collection catalog.">
+    <title>Filmora | Movie Collection</title>
+    <link rel="stylesheet" href="style.css">
+    <style>
+        .static-note { margin: 1rem 0 0; color: var(--muted); font-size: 0.86rem; }
+        .static-note a { color: var(--primary); font-weight: 700; }
+        .modal { display: none; }
+        .modal.open { display: grid; }
+        .dialog-form { display: grid; gap: 0.15rem; }
+        .dialog-form .two-col { margin-top: 0.3rem; }
+        .dialog-form button { margin-top: 1.2rem; }
+        .dialog-close { float: right; border: 0; background: transparent; color: var(--muted); font-size: 1.5rem; cursor: pointer; }
+        .watch-card { width: min(860px, calc(100% - 2rem)); text-align: left; }
+        .watch-card video { display: block; width: 100%; max-height: 70vh; margin-top: 1rem; background: #000; border-radius: 12px; }
+        .watch-message { margin-top: 0.8rem !important; font-size: 0.82rem; }
+        .movie-card .delete-card { margin-left: auto; }
+        @media (max-width: 760px) {
+            .top-actions { gap: 0.45rem; }
+            .top-actions .nav-link { display: none; }
+            .top-actions .small { padding: 0.6rem; font-size: 0.82rem; }
+            .hero { align-items: stretch; flex-direction: column; }
+            .hero-panel { width: 100%; }
+        }
+    </style>
+</head>
+<body>
+<header class="topbar">
+    <div class="container nav">
+        <a href="index.html" class="logo" aria-label="Filmora home">
+            <span class="brand-mark">F</span>
+            <span class="brand-word">Filmora</span>
+        </a>
+        <nav class="top-actions" aria-label="Main navigation">
+            <a href="#collection" class="nav-link">Collection</a>
+            <button type="button" class="btn primary" id="openAdd">+ Add Movie</button>
+            <span class="user-chip" id="userChip" hidden></span>
+            <a href="profile.html" class="btn small" id="profileLink">Profile</a>
+            <a href="login.html" class="btn small" id="loginLink">Login</a>
+            <a href="signup.html" class="btn small" id="signupLink">Sign Up</a>
+            <a href="logout.html" class="btn small" id="logoutLink" hidden>Logout</a>
+        </nav>
+    </div>
+</header>
+
+<main class="container">
+    <section class="hero">
+        <div class="hero-copy">
+            <p class="eyebrow">MY COLLECTION</p>
+            <h1>Your movies,<br><span>all in one place.</span></h1>
+            <p class="subtitle">Keep a lightweight, personal catalog of your favorite films. Your collection is saved in this browser.</p>
+        </div>
+        <div class="hero-panel" aria-label="Collection overview">
+            <div class="mini-stat">
+                <span class="label">Total movies</span>
+                <strong id="totalMovies">0</strong>
+            </div>
+            <div class="latest">
+                <span class="label">Latest pick</span>
+                <strong id="latestTitle">Add your first film</strong>
+                <small id="latestMeta">Your newest movie will appear here.</small>
+            </div>
+        </div>
+    </section>
+
+    <form class="search" id="searchForm" role="search">
+        <input type="search" id="searchInput" placeholder="Search by title, genre or director..." aria-label="Search movies">
+        <button type="submit">Search</button>
+        <button type="button" class="clear" id="clearSearch">Clear</button>
+    </form>
+
+    <div class="section-head" id="collection">
+        <h2 id="sectionTitle">My Movies</h2>
+        <span id="resultCount">0 results</span>
+    </div>
+    <section class="movie-grid" id="movieGrid" aria-live="polite"></section>
+</main>
+
+<div class="modal" id="addModal" aria-hidden="true">
+    <div class="modal-backdrop" id="modalBackdrop"></div>
+    <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="addTitle">
+        <button type="button" class="dialog-close" id="closeAdd" aria-label="Close">&times;</button>
+        <h3 id="addTitle">Add a movie</h3>
+        <form class="dialog-form" id="addForm">
+            <label for="movieTitle">Title</label>
+            <input id="movieTitle" name="title" required maxlength="150">
+            <div class="two-col">
+                <div>
+                    <label for="movieGenre">Genre</label>
+                    <input id="movieGenre" name="genre" required maxlength="100">
+                </div>
+                <div>
+                    <label for="movieYear">Release year</label>
+                    <input id="movieYear" name="year" type="number" min="1888" max="2100" required>
+                </div>
+            </div>
+            <label for="movieDirector">Director</label>
+            <input id="movieDirector" name="director" required maxlength="150">
+            <label for="movieRating">Rating</label>
+            <input id="movieRating" name="rating" type="number" min="0" max="10" step="0.1" value="0">
+            <label for="movieFile">Movie file</label>
+            <input id="movieFile" name="movieFile" type="file" accept="video/*">
+            <small class="form-help">The video stays in this browser and is available on this device only.</small>
+            <button type="submit" class="btn primary full">Save Movie</button>
+        </form>
+    </div>
+</div>
+
+<div class="modal" id="watchModal" aria-hidden="true">
+    <div class="modal-backdrop" id="watchBackdrop"></div>
+    <div class="modal-card watch-card" role="dialog" aria-modal="true" aria-labelledby="watchTitle">
+        <button type="button" class="dialog-close" id="closeWatch" aria-label="Close">&times;</button>
+        <h3 id="watchTitle">Watch movie</h3>
+        <video id="moviePlayer" controls playsinline></video>
+        <p id="watchMessage" class="watch-message"></p>
+    </div>
+</div>
+
+<footer>
+    <p>Filmora &copy; <span id="currentYear"></span> &middot; Static movie collection</p>
+</footer>
+
+<script src="auth.js"></script>
+<script>
+const currentUser = getCurrentUser();
+if (!currentUser) {
+    window.location.replace('login.html');
+}
+
+const storageKey = `filmora-movies-${currentUser ? currentUser.id : 'guest'}`;
+const videoDatabase = 'filmora-video-files';
+const starterMovies = [
+    { id: 1, title: 'Inception', genre: 'Sci-Fi', director: 'Christopher Nolan', year: 2010, rating: 8.8 },
+    { id: 2, title: 'The Dark Knight', genre: 'Action', director: 'Christopher Nolan', year: 2008, rating: 9.0 },
+    { id: 3, title: 'Interstellar', genre: 'Sci-Fi', director: 'Christopher Nolan', year: 2014, rating: 8.7 }
+];
+
+let movies = loadMovies();
+let searchTerm = '';
+
+function loadMovies() {
+    try {
+        const saved = JSON.parse(localStorage.getItem(storageKey));
+        return Array.isArray(saved) ? saved : [...starterMovies];
+    } catch (error) {
+        return [...starterMovies];
+    }
+}
+
+function saveMovies() {
+    localStorage.setItem(storageKey, JSON.stringify(movies));
+}
+
+function videoStorageKey(id) {
+    return `${currentUser.id}:${id}`;
+}
+
+function openVideoDatabase() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(videoDatabase, 1);
+        request.onupgradeneeded = () => request.result.createObjectStore('videos');
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function storeVideo(id, file) {
+    if (!file) return;
+    const database = await openVideoDatabase();
+    await new Promise((resolve, reject) => {
+        const transaction = database.transaction('videos', 'readwrite');
+        transaction.objectStore('videos').put(file, videoStorageKey(id));
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+}
+
+async function getVideo(id) {
+    const database = await openVideoDatabase();
+    const file = await new Promise((resolve, reject) => {
+        const request = database.transaction('videos').objectStore('videos').get(videoStorageKey(id));
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+    database.close();
+    return file;
+}
+
+async function removeVideo(id) {
+    const database = await openVideoDatabase();
+    await new Promise((resolve, reject) => {
+        const transaction = database.transaction('videos', 'readwrite');
+        transaction.objectStore('videos').delete(videoStorageKey(id));
+        transaction.oncomplete = resolve;
+        transaction.onerror = () => reject(transaction.error);
+    });
+    database.close();
+}
+
+function renderMovies() {
+    const normalized = searchTerm.toLowerCase();
+    const visibleMovies = movies.filter((movie) =>
+        [movie.title, movie.genre, movie.director].some((value) => value.toLowerCase().includes(normalized))
+    );
+    const grid = document.getElementById('movieGrid');
+    document.getElementById('totalMovies').textContent = movies.length;
+    document.getElementById('resultCount').textContent = `${visibleMovies.length} result${visibleMovies.length === 1 ? '' : 's'}`;
+    document.getElementById('sectionTitle').textContent = searchTerm ? 'Search results' : 'My Movies';
+
+    if (movies.length > 0) {
+        const latest = movies[0];
+        document.getElementById('latestTitle').textContent = latest.title;
+            document.getElementById('latestMeta').textContent = `${latest.genre} &middot; ${latest.year}`;
+    } else {
+        document.getElementById('latestTitle').textContent = 'Add your first film';
+        document.getElementById('latestMeta').textContent = 'Your newest movie will appear here.';
+    }
+
+    if (visibleMovies.length === 0) {
+        grid.innerHTML = '<div class="empty"><div>&#127916;</div><h3>No movies found</h3><p>Add your first movie or try another search.</p><button type="button" class="btn primary" id="emptyAdd">Add Movie</button></div>';
+        document.getElementById('emptyAdd').addEventListener('click', openModal);
+        return;
+    }
+
+    grid.innerHTML = visibleMovies.map((movie) => `
+        <article class="movie-card">
+            <div class="poster"><div class="poster-placeholder" aria-hidden="true">&#127916;</div><div class="year">${escapeHtml(movie.year)}</div></div>
+            <div class="movie-body">
+                <div class="movie-info">
+                    <h3>${escapeHtml(movie.title)}</h3>
+                    <p class="meta">${escapeHtml(movie.genre)} &middot; ${escapeHtml(movie.director)}</p>
+                    <p class="rating">&#9733; ${escapeHtml(movie.rating)}/10</p>
+                </div>
+                <div class="actions">
+                    ${movie.hasVideo ? `<button type="button" class="btn primary watch-card-button" data-id="${movie.id}">Watch</button>` : ''}
+                    <button type="button" class="btn small danger delete-card" data-id="${movie.id}">Delete</button>
+                </div>
+            </div>
+        </article>`).join('');
+
+    document.querySelectorAll('.watch-card-button').forEach((button) => {
+        button.addEventListener('click', () => openWatchModal(Number(button.dataset.id)));
+    });
+    document.querySelectorAll('.delete-card').forEach((button) => {
+        button.addEventListener('click', async () => {
+            movies = movies.filter((movie) => movie.id !== Number(button.dataset.id));
+            saveMovies();
+            await removeVideo(button.dataset.id);
+            renderMovies();
+        });
+    });
+}
+
+function escapeHtml(value) {
+    return String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' }[character]));
+}
+
+const modal = document.getElementById('addModal');
+const watchModal = document.getElementById('watchModal');
+const moviePlayer = document.getElementById('moviePlayer');
+let activeVideoUrl = null;
+function openModal() {
+    modal.classList.add('open');
+    modal.setAttribute('aria-hidden', 'false');
+    document.getElementById('movieTitle').focus();
+}
+function closeModal() {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+}
+
+async function openWatchModal(id) {
+    const movie = movies.find((item) => item.id === id);
+    const file = await getVideo(id);
+    if (!movie || !file) return;
+    activeVideoUrl = URL.createObjectURL(file);
+    moviePlayer.src = activeVideoUrl;
+    document.getElementById('watchTitle').textContent = movie.title;
+    document.getElementById('watchMessage').textContent = file.name || 'Saved locally in this browser';
+    watchModal.classList.add('open');
+    watchModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeWatchModal() {
+    moviePlayer.pause();
+    moviePlayer.removeAttribute('src');
+    moviePlayer.load();
+    if (activeVideoUrl) URL.revokeObjectURL(activeVideoUrl);
+    activeVideoUrl = null;
+    watchModal.classList.remove('open');
+    watchModal.setAttribute('aria-hidden', 'true');
+}
+
+document.getElementById('openAdd').addEventListener('click', openModal);
+document.getElementById('closeAdd').addEventListener('click', closeModal);
+document.getElementById('modalBackdrop').addEventListener('click', closeModal);
+document.getElementById('closeWatch').addEventListener('click', closeWatchModal);
+document.getElementById('watchBackdrop').addEventListener('click', closeWatchModal);
+document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+        closeModal();
+        closeWatchModal();
+    }
+});
+document.getElementById('searchForm').addEventListener('submit', (event) => {
+    event.preventDefault();
+    searchTerm = document.getElementById('searchInput').value.trim();
+    renderMovies();
+});
+document.getElementById('clearSearch').addEventListener('click', () => {
+    document.getElementById('searchInput').value = '';
+    searchTerm = '';
+    renderMovies();
+});
+document.getElementById('addForm').addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const form = new FormData(event.target);
+    const id = Date.now();
+    const file = form.get('movieFile');
+    movies.unshift({
+        id, title: form.get('title').trim(), genre: form.get('genre').trim(),
+        director: form.get('director').trim(), year: Number(form.get('year')), rating: Number(form.get('rating')),
+        hasVideo: file instanceof File && file.size > 0
+    });
+    if (file instanceof File && file.size > 0) await storeVideo(id, file);
+    saveMovies();
+    event.target.reset();
+    closeModal();
+    renderMovies();
+});
+
+document.getElementById('currentYear').textContent = new Date().getFullYear();
+renderMovies();
+</script>
+</body>
+</html>
